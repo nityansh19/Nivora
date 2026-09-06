@@ -1,0 +1,104 @@
+import type { Transaction } from './finance';
+import type { SavingsGoal } from './savings';
+import { formatMoney } from './finance';
+
+export type AssistantIntent = 'summary' | 'spending' | 'saving' | 'budget' | 'income' | 'help';
+export type AssistantResponse = { title: string; body: string; facts: string[]; intent: AssistantIntent };
+
+const normalize = (value: string) => value.toLowerCase().trim();
+const monthKey = (date: string) => date.slice(0, 7);
+
+function currentMonthTransactions(transactions: Transaction[]) {
+  const now = new Date();
+  const key = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  return transactions.filter(t => monthKey(t.date) === key);
+}
+
+function categoryTotals(transactions: Transaction[]) {
+  return transactions.filter(t => t.type === 'expense').reduce<Record<string, number>>((acc, t) => {
+    acc[t.category] = (acc[t.category] ?? 0) + t.amount;
+    return acc;
+  }, {});
+}
+
+function topCategory(transactions: Transaction[]) {
+  const entries = Object.entries(categoryTotals(transactions)).sort((a, b) => b[1] - a[1]);
+  return entries[0];
+}
+
+function detectIntent(input: string): AssistantIntent {
+  const q = normalize(input);
+  if (/help|what can you|commands|ask/.test(q)) return 'help';
+  if (/save|saving|savings|goal|target/.test(q)) return 'saving';
+  if (/budget|spend limit|left to spend|remaining/.test(q)) return 'budget';
+  if (/income|earn|salary/.test(q)) return 'income';
+  if (/spend|expense|spent|category|where.*money/.test(q)) return 'spending';
+  return 'summary';
+}
+
+export function answerFinancialQuestion(input: string, transactions: Transaction[], goals: SavingsGoal[], monthlyBudget = 0): AssistantResponse {
+  const intent = detectIntent(input);
+  const month = currentMonthTransactions(transactions);
+  const income = month.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+  const expenses = month.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+  const net = income - expenses;
+  const top = topCategory(month);
+  const activeGoals = goals.filter(g => g.status === 'active');
+  const savedThisMonth = month.filter(t => false).length;
+  void savedThisMonth;
+
+  if (!transactions.length) return {
+    title: 'Let’s start with real data.',
+    body: 'Add a few transactions and I’ll turn them into useful summaries. I never invent numbers when your workspace has no matching data.',
+    facts: ['Try: “How am I doing this month?”', 'Try: “Where am I spending the most?”'],
+    intent: 'summary'
+  };
+
+  if (intent === 'help') return {
+    title: 'Ask me about your money.',
+    body: 'I can explain your current-month cash flow, spending categories, income, budget position and savings goals using the data already inside Nivora.',
+    facts: ['“How am I doing this month?”', '“Where am I spending the most?”', '“How much income did I record?”', '“How much budget do I have left?”', '“How are my savings goals doing?”'],
+    intent
+  };
+
+  if (intent === 'spending') return {
+    title: top ? `${top[0]} is your biggest category.` : 'No expense pattern yet.',
+    body: top ? `You’ve recorded ${formatMoney(top[1])} in ${top[0]} expenses this month. That is the clearest spending signal in your current data.` : 'There are no expense entries in the current month yet.',
+    facts: [`This month’s expenses · ${formatMoney(expenses)}`, top ? `Largest category · ${formatMoney(top[1])}` : 'Largest category · —'],
+    intent
+  };
+
+  if (intent === 'income') return {
+    title: `You recorded ${formatMoney(income)} of income.`,
+    body: income ? `That is the income currently recorded for this month. Compare it with ${formatMoney(expenses)} of expenses to understand your current cash flow.` : 'No income has been recorded for the current month yet.',
+    facts: [`Income · ${formatMoney(income)}`, `Expenses · ${formatMoney(expenses)}`, `Net cash flow · ${formatMoney(net)}`],
+    intent
+  };
+
+  if (intent === 'budget') {
+    const remaining = monthlyBudget > 0 ? monthlyBudget - expenses : 0;
+    return {
+      title: monthlyBudget > 0 ? `${formatMoney(Math.max(remaining, 0))} remains in your budget.` : 'Your monthly budget is not set yet.',
+      body: monthlyBudget > 0 ? `You’ve used ${formatMoney(expenses)} of your ${formatMoney(monthlyBudget)} monthly budget${remaining < 0 ? ', so you are currently over the limit.' : '.'}` : 'Set a monthly budget in Budget to make this answer useful.',
+      facts: monthlyBudget > 0 ? [`Budget · ${formatMoney(monthlyBudget)}`, `Spent · ${formatMoney(expenses)}`, `Remaining · ${formatMoney(remaining)}`] : ['Budget · Not set'],
+      intent
+    };
+  }
+
+  if (intent === 'saving') {
+    const goalText = activeGoals.length ? `${activeGoals.length} active savings goal${activeGoals.length === 1 ? '' : 's'} are being tracked.` : 'You do not have an active savings goal yet.';
+    return {
+      title: activeGoals.length ? 'Your savings goals are on the radar.' : 'Let’s define a savings target.',
+      body: goalText + ' Open Savings to review progress and contribution history.',
+      facts: activeGoals.slice(0, 3).map(g => `${g.name} · ${formatMoney(g.currentAmount)} / ${formatMoney(g.targetAmount)}`),
+      intent
+    };
+  }
+
+  return {
+    title: net >= 0 ? 'Your month is currently cash-flow positive.' : 'Your month is currently cash-flow negative.',
+    body: `This month you’ve recorded ${formatMoney(income)} in income and ${formatMoney(expenses)} in expenses, leaving ${formatMoney(net)} of net cash flow.`,
+    facts: [`Income · ${formatMoney(income)}`, `Expenses · ${formatMoney(expenses)}`, `Net cash flow · ${formatMoney(net)}`],
+    intent
+  };
+}
