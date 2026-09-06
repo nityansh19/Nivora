@@ -33,6 +33,12 @@ export function monthLabel(month: string): string {
   return new Date(year, monthNumber - 1, 1).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
 }
 
+export function shiftMonth(month: string, offset: number): string {
+  const [year, monthNumber] = month.split('-').map(Number);
+  const date = new Date(year, monthNumber - 1 + offset, 1);
+  return monthKey(date);
+}
+
 export function monthTransactions(transactions: Transaction[], month: string): Transaction[] {
   return transactions.filter(t => t.date.startsWith(month));
 }
@@ -42,6 +48,10 @@ export function categorySpending(transactions: Transaction[], month: string): Re
     acc[t.category] = (acc[t.category] ?? 0) + t.amount;
     return acc;
   }, {});
+}
+
+export function totalSpent(transactions: Transaction[], month: string): number {
+  return Object.values(categorySpending(transactions, month)).reduce((sum, value) => sum + value, 0);
 }
 
 export function budgetUsage(budgeted: number | undefined, spent: number): BudgetUsage {
@@ -58,7 +68,7 @@ export function totalBudgeted(budget: MonthlyBudget): number {
 }
 
 export function overallBudgetUsage(budget: MonthlyBudget | undefined, transactions: Transaction[], month: string): BudgetUsage {
-  return budgetUsage(budget ? totalBudgeted(budget) : undefined, categorySpending(transactions, month) |> Object.values |> (values => values.reduce((sum, value) => sum + value, 0)));
+  return budgetUsage(budget ? totalBudgeted(budget) : undefined, totalSpent(transactions, month));
 }
 
 export function categoryBudgetUsage(budget: MonthlyBudget | undefined, transactions: Transaction[], month: string, category: string): BudgetUsage {
