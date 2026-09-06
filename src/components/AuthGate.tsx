@@ -4,6 +4,8 @@ import { ArrowRight, Check, ChevronLeft, CircleDollarSign, ShieldCheck, Sparkles
 import { accountLabels, type AccountType } from '../domain/finance';
 import { createAccount } from '../domain/accounts';
 import { loadAccounts, saveAccounts } from '../data/accountStorage';
+import { cloudSignIn, cloudSignUp } from '../data/cloudAuth';
+import { isSupabaseConfigured } from '../lib/supabaseClient';
 import { loadAuth, loadOnboarding, saveAuth, saveOnboarding, type OnboardingProfile } from '../domain/onboarding';
 
 export default function AuthGate({ onComplete }: { onComplete: (profile: OnboardingProfile) => void }) {
@@ -17,20 +19,29 @@ export default function AuthGate({ onComplete }: { onComplete: (profile: Onboard
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  function submitAuth(e: FormEvent) {
+  async function submitAuth(e: FormEvent) {
     e.preventDefault();
     setError('');
     const normalizedEmail = email.trim().toLowerCase();
     if (!/^\S+@\S+\.\S+$/.test(normalizedEmail)) return setError('Enter a valid email address.');
     if (password.length < 6) return setError('Use at least 6 characters for your password.');
     setLoading(true);
-    window.setTimeout(() => {
+
+    if (isSupabaseConfigured) {
+      const result = mode === 'login' ? await cloudSignIn(normalizedEmail, password) : await cloudSignUp(normalizedEmail, password);
+      setLoading(false);
+      if (!result.ok) return setError(result.message ?? 'Unable to authenticate right now.');
+      if (mode === 'signup' && !result.userId) return setError(result.message ?? 'Check your email to finish account verification.');
+      saveAuth(normalizedEmail);
+    } else {
+      await new Promise(resolve => window.setTimeout(resolve, 350));
       saveAuth(normalizedEmail);
       setLoading(false);
-      const nextProfile = loadOnboarding();
-      if (nextProfile.completed) onComplete(nextProfile);
-      else setStep(1);
-    }, 350);
+    }
+
+    const nextProfile = loadOnboarding();
+    if (nextProfile.completed) onComplete(nextProfile);
+    else setStep(1);
   }
 
   function finish() {
@@ -48,5 +59,5 @@ export default function AuthGate({ onComplete }: { onComplete: (profile: Onboard
     { title: 'Your workspace is ready.', copy: 'Review the basics, then enter your private finance workspace.', content: <div className="auth-review"><div><span>Profile</span><strong>{profile.name || 'Nivora user'}</strong></div><div><span>Primary account</span><strong>{profile.primaryAccountName || 'Main account'} · {accountLabels[profile.primaryAccountType]}</strong></div><div><span>Monthly income</span><strong>₹{profile.monthlyIncome.toLocaleString('en-IN')}</strong></div><div><span>Monthly budget</span><strong>₹{profile.monthlyBudget.toLocaleString('en-IN')}</strong></div><div><span>Savings target</span><strong>₹{profile.savingsTarget.toLocaleString('en-IN')}</strong></div></div> },
   ];
 
-  return <div className="auth-shell"><div className="auth-brand"><div className="brand-mark">N</div><span>Nivora</span><small>Private finance OS</small></div><div className="auth-grid"><section className="auth-visual"><div className="auth-visual-copy"><div className="auth-kicker"><Sparkles size={14}/> CALM MONEY MANAGEMENT</div><p className="eyebrow">PERSONAL FINANCE OS</p><h1>Clarity for every rupee.</h1><p>Track, plan and understand your money in one calm workspace — designed to make everyday decisions feel lighter.</p><div className="auth-proof"><ShieldCheck size={17}/><span>Private by default · Stored locally for now</span></div></div><div className="auth-orbit"><CircleDollarSign size={36}/><span>₹</span></div></section><section className="auth-card"><AnimatePresence mode="wait">{step === 0 ? <motion.div key="auth" initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -12 }}><div className="auth-header"><p className="eyebrow">{mode === 'login' ? 'WELCOME BACK' : 'NEW WORKSPACE'}</p><h2>{mode === 'login' ? 'Sign in to Nivora' : 'Create your workspace'}</h2><p>{mode === 'login' ? 'Continue where you left off.' : 'Start your private finance workspace.'}</p></div><form onSubmit={submitAuth} className="auth-form"><label>Email<input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" autoComplete="email" required /></label><label>Password<input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" autoComplete={mode === 'login' ? 'current-password' : 'new-password'} required /></label>{error && <p className="form-error" role="alert">{error}</p>}<button className="primary-button full" disabled={loading}>{loading ? 'Opening Nivora…' : mode === 'login' ? 'Sign in' : 'Create account'} <ArrowRight size={17}/></button></form><div className="auth-switch">{mode === 'login' ? "New to Nivora?" : 'Already have an account?'} <button type="button" onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); setError(''); }}>{mode === 'login' ? 'Create account' : 'Sign in'}</button></div></motion.div> : <motion.div key={step} initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -12 }}><div className="step-top"><button type="button" className="icon-button" onClick={() => setStep(step - 1)} aria-label="Previous step"><ChevronLeft size={18}/></button><span>Setup {step} of 3</span><div className="step-progress"><i style={{ width: `${(step / 3) * 100}%` }}/></div></div><div className="auth-header"><p className="eyebrow">PERSONALIZE</p><h2>{steps[step].title}</h2><p>{steps[step].copy}</p></div><div className="auth-form">{steps[step].content}<button className="primary-button full" onClick={() => step === 3 ? finish() : setStep(step + 1)}>{step === 3 ? <>Enter Nivora <Check size={17}/></> : <>Continue <ArrowRight size={17}/></>}</button></div></motion.div>}</AnimatePresence></section></div><footer>Built for your financial life · Nivora</footer></div>;
+  return <div className="auth-shell"><div className="auth-brand"><div className="brand-mark">N</div><span>Nivora</span><small>{isSupabaseConfigured ? 'Cloud-secured workspace' : 'Private finance OS'}</small></div><div className="auth-grid"><section className="auth-visual"><div className="auth-visual-copy"><div className="auth-kicker"><Sparkles size={14}/> CALM MONEY MANAGEMENT</div><p className="eyebrow">PERSONAL FINANCE OS</p><h1>Clarity for every rupee.</h1><p>Track, plan and understand your money in one calm workspace — designed to make everyday decisions feel lighter.</p><div className="auth-proof"><ShieldCheck size={17}/><span>{isSupabaseConfigured ? 'Secure authentication · Cloud-ready' : 'Private by default · Stored locally for now'}</span></div></div><div className="auth-orbit"><CircleDollarSign size={36}/><span>₹</span></div></section><section className="auth-card"><AnimatePresence mode="wait">{step === 0 ? <motion.div key="auth" initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -12 }}><div className="auth-header"><p className="eyebrow">{mode === 'login' ? 'WELCOME BACK' : 'NEW WORKSPACE'}</p><h2>{mode === 'login' ? 'Sign in to Nivora' : 'Create your workspace'}</h2><p>{mode === 'login' ? 'Continue where you left off.' : 'Start your private finance workspace.'}</p></div><form onSubmit={submitAuth} className="auth-form"><label>Email<input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" autoComplete="email" required /></label><label>Password<input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" autoComplete={mode === 'login' ? 'current-password' : 'new-password'} required /></label>{error && <p className="form-error" role="alert">{error}</p>}<button className="primary-button full" disabled={loading}>{loading ? 'Opening Nivora…' : mode === 'login' ? 'Sign in' : 'Create account'} <ArrowRight size={17}/></button></form><div className="auth-switch">{mode === 'login' ? "New to Nivora?" : 'Already have an account?'} <button type="button" onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); setError(''); }}>{mode === 'login' ? 'Create account' : 'Sign in'}</button></div></motion.div> : <motion.div key={step} initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -12 }}><div className="step-top"><button type="button" className="icon-button" onClick={() => setStep(step - 1)} aria-label="Previous step"><ChevronLeft size={18}/></button><span>Setup {step} of 3</span><div className="step-progress"><i style={{ width: `${(step / 3) * 100}%` }}/></div></div><div className="auth-header"><p className="eyebrow">PERSONALIZE</p><h2>{steps[step].title}</h2><p>{steps[step].copy}</p></div><div className="auth-form">{steps[step].content}<button className="primary-button full" onClick={() => step === 3 ? finish() : setStep(step + 1)}>{step === 3 ? <>Enter Nivora <Check size={17}/></> : <>Continue <ArrowRight size={17}/></>}</button></div></motion.div>}</AnimatePresence></section></div><footer>Built for your financial life · Nivora</footer></div>;
 }
