@@ -49,6 +49,13 @@ function applyWorkspace(payload: WorkspacePayload) {
   }
 }
 
+function clearLocalWorkspace() {
+  for (const key of LOCAL_KEYS) {
+    if (key !== 'nivora.theme') localStorage.removeItem(key);
+  }
+  localStorage.removeItem(SYNC_META_KEY);
+}
+
 function hashPayload(payload: WorkspacePayload) {
   const text = JSON.stringify(payload);
   let hash = 2166136261;
@@ -121,8 +128,7 @@ export async function uploadCloudWorkspace(force = false) {
 }
 
 export async function bootstrapCloudWorkspace() {
-  const result = await restoreCloudWorkspace();
-  return result;
+  return restoreCloudWorkspace();
 }
 
 export function startCloudWorkspaceSync() {
@@ -145,9 +151,14 @@ export function startCloudWorkspaceSync() {
   const { data } = supabase.auth.onAuthStateChange((event, session) => {
     if (event === 'SIGNED_IN' && session) {
       window.setTimeout(async () => {
-        const restored = await restoreCloudWorkspace();
-        if (!restored.restored) await uploadCloudWorkspace(true);
+        const result = await restoreCloudWorkspace();
+        if (!result.restored) await uploadCloudWorkspace(true);
+        if (result.restored) window.location.reload();
       }, 0);
+    }
+
+    if (event === 'SIGNED_OUT') {
+      clearLocalWorkspace();
     }
   });
 
