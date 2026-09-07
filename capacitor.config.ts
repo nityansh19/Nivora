@@ -4,7 +4,6 @@ const config: CapacitorConfig = {
   appId: 'com.nivora.finance',
   appName: 'Nivora',
   webDir: 'dist',
-  bundledWebRuntime: false,
   server: {
     androidScheme: 'https',
   },
