@@ -1,0 +1,11 @@
+/* Android safe-area foundation. Native-specific styling stays isolated here. */
+:root[data-platform='android'] {
+  --nivora-native-top-inset: env(safe-area-inset-top, 0px);
+  --nivora-native-bottom-inset: env(safe-area-inset-bottom, 0px);
+}
+
+@supports (padding: env(safe-area-inset-bottom)) {
+  :root[data-platform='android'] .main {
+    padding-bottom: var(--nivora-native-bottom-inset);
+  }
+}
