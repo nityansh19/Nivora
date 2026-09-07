@@ -1,7 +1,7 @@
 {
   "name": "nivora",
   "private": true,
-  "version": "0.3.1",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -19,9 +19,9 @@
     "@supabase/supabase-js": "latest",
     "framer-motion": "latest",
     "lucide-react": "latest",
+    "recharts": "latest",
     "react": "latest",
-    "react-dom": "latest",
-    "recharts": "latest"
+    "react-dom": "latest"
   },
   "devDependencies": {
     "@capacitor/cli": "latest",
