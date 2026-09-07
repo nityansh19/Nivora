@@ -1,14 +1,15 @@
 {
   "name": "nivora",
   "private": true,
-  "version": "0.3.0",
+  "version": "0.3.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "vite build",
+    "typecheck": "tsc --noEmit",
     "preview": "vite preview",
     "cap:add:android": "cap add android",
-    "cap:sync": "cap sync",
+    "cap:sync": "npm run build && cap sync android",
     "cap:open:android": "cap open android",
     "cap:run:android": "cap run android"
   },
