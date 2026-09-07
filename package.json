@@ -1,14 +1,20 @@
 {
   "name": "nivora",
   "private": true,
-  "version": "0.2.0",
+  "version": "0.3.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "cap:add:android": "cap add android",
+    "cap:sync": "cap sync",
+    "cap:open:android": "cap open android",
+    "cap:run:android": "cap run android"
   },
   "dependencies": {
+    "@capacitor/android": "latest",
+    "@capacitor/core": "latest",
     "@supabase/supabase-js": "latest",
     "framer-motion": "latest",
     "lucide-react": "latest",
@@ -17,6 +23,7 @@
     "recharts": "latest"
   },
   "devDependencies": {
+    "@capacitor/cli": "latest",
     "typescript": "latest",
     "vite": "latest"
   }
