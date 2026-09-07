@@ -5,6 +5,7 @@ import App from './App';
 import './index.css';
 import './native.css';
 import { migrateTransactionAccounts } from './data/accountMigration';
+import { bootstrapCloudWorkspace, startCloudWorkspaceSync } from './data/cloudWorkspace';
 import { registerPWA } from './pwa';
 
 migrateTransactionAccounts();
@@ -14,8 +15,15 @@ if (Capacitor.isNativePlatform()) {
   document.documentElement.dataset.platform = Capacitor.getPlatform();
 }
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-);
+async function start() {
+  await bootstrapCloudWorkspace();
+  startCloudWorkspaceSync();
+
+  createRoot(document.getElementById('root')!).render(
+    <StrictMode>
+      <App />
+    </StrictMode>,
+  );
+}
+
+void start();
