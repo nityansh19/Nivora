@@ -1,11 +1,252 @@
-/* Android safe-area foundation. Native-specific styling stays isolated here. */
+/* Android-specific shell polish. Keep native-only layout concerns isolated here. */
 :root[data-platform='android'] {
   --nivora-native-top-inset: env(safe-area-inset-top, 0px);
   --nivora-native-bottom-inset: env(safe-area-inset-bottom, 0px);
 }
 
-@supports (padding: env(safe-area-inset-bottom)) {
+@media (max-width: 760px) {
+  :root[data-platform='android'] body {
+    overscroll-behavior-y: none;
+  }
+
   :root[data-platform='android'] .main {
-    padding-bottom: var(--nivora-native-bottom-inset);
+    padding-bottom: calc(82px + max(var(--nivora-native-bottom-inset), 10px));
+  }
+
+  /* The Android system status bar must never compete with Nivora's header. */
+  :root[data-platform='android'] .topbar {
+    height: auto;
+    min-height: 84px;
+    padding: max(var(--nivora-native-top-inset), 28px) 18px 13px;
+    align-items: flex-end;
+    background: color-mix(in srgb, var(--bg) 94%, transparent);
+    backdrop-filter: blur(18px);
+  }
+
+  :root[data-platform='android'] .topbar-left {
+    width: 100%;
+    min-width: 0;
+    gap: 12px;
+    align-items: center;
+  }
+
+  :root[data-platform='android'] .topbar-left > div:last-child {
+    min-width: 0;
+    flex: 1;
+  }
+
+  :root[data-platform='android'] .topbar .eyebrow {
+    display: none;
+  }
+
+  :root[data-platform='android'] .topbar h1 {
+    max-width: calc(100vw - 94px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 20px;
+    line-height: 1.18;
+    letter-spacing: -0.035em;
+  }
+
+  /* Search, notifications, theme and avatar remain available from drawer/settings.
+     Hiding them here gives the mobile title the space it needs. */
+  :root[data-platform='android'] .topbar-actions {
+    display: none;
+  }
+
+  :root[data-platform='android'] .mobile-menu {
+    width: 42px;
+    height: 42px;
+    flex: 0 0 42px;
+    border-radius: 13px;
+    background: var(--surface-2);
+  }
+
+  :root[data-platform='android'] .content {
+    padding: 22px 18px 24px;
+  }
+
+  :root[data-platform='android'] .hero-row {
+    gap: 17px;
+    margin-bottom: 18px;
+  }
+
+  :root[data-platform='android'] .section-kicker {
+    margin-bottom: 5px;
+    font-size: 10px;
+    letter-spacing: .16em;
+  }
+
+  :root[data-platform='android'] .muted {
+    font-size: 13px;
+    line-height: 1.45;
+  }
+
+  :root[data-platform='android'] .hero-row .primary-button {
+    min-height: 52px;
+    border-radius: 14px;
+    font-size: 13px;
+    box-shadow: none;
+  }
+
+  :root[data-platform='android'] .stats-grid {
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+
+  :root[data-platform='android'] .stat-card {
+    min-height: 122px;
+    padding: 15px;
+    border-radius: 17px;
+    box-shadow: none;
+  }
+
+  :root[data-platform='android'] .stat-card strong {
+    margin-top: 17px;
+    font-size: 22px;
+  }
+
+  :root[data-platform='android'] .stat-top {
+    font-size: 11px;
+  }
+
+  :root[data-platform='android'] .stat-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+  }
+
+  :root[data-platform='android'] .workspace-grid,
+  :root[data-platform='android'] .lower-grid {
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+
+  :root[data-platform='android'] .panel {
+    border-radius: 18px;
+    box-shadow: none;
+  }
+
+  :root[data-platform='android'] .panel-header {
+    padding: 18px 18px 13px;
+  }
+
+  :root[data-platform='android'] .panel-header h2 {
+    font-size: 16px;
+    line-height: 1.25;
+  }
+
+  :root[data-platform='android'] .panel-header p {
+    font-size: 11px;
+    line-height: 1.45;
+  }
+
+  :root[data-platform='android'] .text-button {
+    font-size: 11px;
+    padding-top: 1px;
+  }
+
+  :root[data-platform='android'] .empty-chart {
+    min-height: 230px;
+    margin: 0 12px 12px;
+    padding: 24px 18px;
+    border-radius: 15px;
+  }
+
+  :root[data-platform='android'] .empty-chart strong {
+    font-size: 15px;
+  }
+
+  :root[data-platform='android'] .empty-chart span {
+    margin: 7px 0 17px;
+    font-size: 11px;
+    line-height: 1.55;
+  }
+
+  :root[data-platform='android'] .chart-orbit {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+  }
+
+  :root[data-platform='android'] .empty-chart .secondary-button {
+    min-height: 44px;
+    padding: 0 15px;
+    border-radius: 12px;
+    font-size: 12px;
+  }
+
+  :root[data-platform='android'] .insight-empty {
+    padding: 10px 18px 17px;
+  }
+
+  :root[data-platform='android'] .mini-row {
+    padding-left: 18px;
+    padding-right: 18px;
+    font-size: 11px;
+  }
+
+  :root[data-platform='android'] .quick-actions {
+    grid-template-columns: 1fr 1fr;
+    gap: 9px;
+    padding: 0 13px 13px;
+  }
+
+  :root[data-platform='android'] .quick-action {
+    min-height: 50px;
+    border-radius: 13px;
+    font-size: 11px;
+  }
+
+  /* Five destinations fit comfortably on a phone. Savings remains in the drawer. */
+  :root[data-platform='android'] .mobile-nav {
+    grid-template-columns: repeat(5, 1fr);
+    overflow: hidden;
+    min-height: 72px;
+    padding: 7px 8px max(var(--nivora-native-bottom-inset), 8px);
+    background: color-mix(in srgb, var(--surface) 94%, transparent);
+    box-shadow: 0 -10px 30px rgba(0, 0, 0, .08);
+  }
+
+  :root[data-platform='android'] .mobile-nav-item:nth-child(5) {
+    display: none;
+  }
+
+  :root[data-platform='android'] .mobile-nav-item {
+    min-width: 0;
+    min-height: 52px;
+    gap: 4px;
+    padding: 6px 3px;
+    border-radius: 12px;
+    font-size: 9px;
+    background: transparent;
+  }
+
+  :root[data-platform='android'] .mobile-nav-item.active {
+    background: transparent;
+    color: var(--primary-2);
+    box-shadow: none;
+  }
+
+  :root[data-platform='android'] .mobile-nav-item.active svg {
+    padding: 7px;
+    width: 34px;
+    height: 34px;
+    border-radius: 11px;
+    background: var(--primary-soft);
+  }
+
+  :root[data-platform='android'] .composer-backdrop {
+    align-items: end;
+    padding: 0;
+  }
+
+  :root[data-platform='android'] .composer {
+    width: 100%;
+    max-height: 88vh;
+    overflow-y: auto;
+    border-radius: 22px 22px 0 0;
+    padding: 20px 18px calc(20px + max(var(--nivora-native-bottom-inset), 10px));
   }
 }
